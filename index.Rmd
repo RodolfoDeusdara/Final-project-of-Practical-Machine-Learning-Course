@@ -1,0 +1,68 @@
+---
+title: "Final Project of Practical Machine Learning Course"
+author: "Rodolfo Deusdara"
+date: "15/11/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Background
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://web.archive.org/web/20161224072740/http:/groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
+
+```{r}
+# Creating training and testing obejcts
+training <- read.csv("pml-training.csv", na.strings=c("NA","#DIV/0!", ""))  
+testing <- read.csv("pml-testing.csv",  na.strings=c("NA","#DIV/0!", ""))
+# Checking dimensions
+dim(training)
+dim(testing)
+# Cleaning missing data
+training <- training[,colSums(is.na(training))==0]
+testing <- testing[,colSums(is.na(testing))==0]
+# Checking dimensions
+dim(training)
+dim(testing)
+# We are not going to use the seven first columns in our analysis
+training<-training[,-c(1:7)]
+testing<-testing[,-c(1:7)]
+dim(training)
+dim(testing)
+#Seeting seed
+set.seed(12345)
+# Creating Data Partition
+library(caret)
+intrain <- createDataPartition(training$classe, p=0.75, list=FALSE)
+training1 <- training[intrain,]
+testing1 <- training[-intrain,]
+dim(training1)
+#Training and predicting with Classification Tree
+fitControl <- trainControl(method = "cv", number = 5, allowParallel = TRUE)
+
+fit_CT <- train(classe ~., data = training1, method = "rpart", trControl = fitControl)
+pred_CT <- predict(fit_CT, newdata = testing1)
+# Accuracy
+confusionMatrix(pred_CT, testing1$classe)
+
+# Training and predicting with Gradient Boosting Machine
+fit_GBM <- train(classe ~., data = training1, method="gbm", trControl = fitControl)
+pred_GBM <- predict(fit_GBM, newdata=testing1)
+#Accuracy
+confusionMatrix(pred_GBM, testing1$classe)
+
+# Training and predicting with Random Forest
+fit_RF <- train(classe ~ ., data=training1, method = "rf", trControl = fitControl)
+pred_RF <- predict(fit_RF, newdata=testing1)
+#Accuracy
+confusionMatrix(pred_RF, testing1$classe)
+
+# Conclusion- Random forest is the best
+# Final prediction
+Finalprediction <- predict(fit_RF, newdata=testing)
+Finalprediction
+```
+
+
